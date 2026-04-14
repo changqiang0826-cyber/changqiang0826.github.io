@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>一封信</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;500&display=swap');
+
+    :root {
+      --paper: #fdf6e3;
+      --paper-dark: #f5e6c8;
+      --ink: #3a2e24;
+      --ink-light: #6b5b4e;
+      --line: #c8b99a;
+      --accent: #c2705a;
+      --shadow: rgba(58, 46, 36, 0.12);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      background: #e8ddd3;
+      background-image:
+        radial-gradient(ellipse at 20% 50%, rgba(210, 180, 140, 0.3) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(194, 112, 90, 0.08) 0%, transparent 50%);
+      font-family: 'Noto Serif SC', serif;
+      color: var(--ink);
+      overflow-x: hidden;
+    }
+
+    /* ====== PASSWORD SCREEN ====== */
+    .password-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #e8ddd3 0%, #d4c5b2 100%);
+      transition: opacity 0.8s ease, visibility 0.8s ease;
+    }
+    .password-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .lock-card {
+      text-align: center;
+      padding: 50px 40px;
+      max-width: 420px;
+      width: 90%;
+    }
+
+    .lock-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 30px;
+      position: relative;
+    }
+    .lock-icon svg {
+      width: 100%;
+      height: 100%;
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .lock-card h2 {
+      font-family: 'Ma Shan Zheng', cursive;
+      font-size: 28px;
+      color: var(--ink);
+      margin-bottom: 8px;
+      font-weight: normal;
+    }
+    .lock-card .subtitle {
+      font-size: 14px;
+      color: var(--ink-light);
+      margin-bottom: 35px;
+      letter-spacing: 1px;
+    }
+
+    .password-input-wrap {
+      position: relative;
+      margin-bottom: 12px;
+    }
+    .password-input-wrap input {
+      width: 100%;
+      padding: 14px 20px;
+      border: 1.5px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 16px;
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.3s;
+      text-align: center;
+      letter-spacing: 4px;
+    }
+    .password-input-wrap input:focus {
+      border-color: var(--accent);
+    }
+    .password-input-wrap input::placeholder {
+      letter-spacing: 1px;
+      color: var(--line);
+    }
+
+    .unlock-btn {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 12px 48px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+      letter-spacing: 2px;
+    }
+    .unlock-btn:hover { background: #a85d49; transform: translateY(-1px); }
+    .unlock-btn:active { transform: translateY(0); }
+
+    .error-msg {
+      color: var(--accent);
+      font-size: 13px;
+      margin-top: 12px;
+      min-height: 20px;
+      transition: opacity 0.3s;
+    }
+
+    /* ====== LETTER CONTENT ====== */
+    .letter-container {
+      opacity: 0;
+      transition: opacity 1s ease 0.5s;
+      max-width: 750px;
+      margin: 0 auto;
+      padding: 30px 20px 60px;
+    }
+    .letter-container.visible { opacity: 1; }
+
+    /* envelope opening animation */
+    .envelope-header {
+      text-align: center;
+      padding: 40px 0 20px;
+      animation: fadeDown 1s ease 0.8s both;
+    }
+    .envelope-header h1 {
+      font-family: 'Ma Shan Zheng', cursive;
+      font-size: 36px;
+      font-weight: normal;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+    .envelope-header .date {
+      font-size: 13px;
+      color: var(--ink-light);
+      letter-spacing: 2px;
+    }
+
+    /* paper sheet */
+    .paper {
+      background: var(--paper);
+      border-radius: 4px;
+      padding: 50px 45px;
+      margin: 20px 0;
+      position: relative;
+      box-shadow:
+        0 1px 3px var(--shadow),
+        0 8px 24px var(--shadow),
+        inset 0 0 80px rgba(245, 230, 200, 0.5);
+      background-image:
+        repeating-linear-gradient(
+          transparent,
+          transparent 31px,
+          var(--line) 31px,
+          var(--line) 32px
+        );
+      background-position-y: 18px;
+      animation: fadeUp 1s ease both;
+    }
+    .paper::before {
+      content: '';
+      position: absolute;
+      left: 42px;
+      top: 0;
+      bottom: 0;
+      width: 1.5px;
+      background: rgba(194, 112, 90, 0.25);
+    }
+    .paper::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 30px;
+      height: 30px;
+      background: linear-gradient(135deg, transparent 50%, var(--paper-dark) 50%);
+      border-radius: 0 4px 0 0;
+    }
+
+    .paper .greeting {
+      font-family: 'Ma Shan Zheng', cursive;
+      font-size: 24px;
+      color: var(--ink);
+      margin-bottom: 20px;
+      line-height: 32px;
+      padding-left: 20px;
+    }
+
+    .paper .body-text {
+      font-family: 'Ma Shan Zheng', cursive;
+      font-size: 20px;
+      line-height: 32px;
+      color: var(--ink);
+      padding-left: 20px;
+      text-align: justify;
+      white-space: pre-wrap;
+    }
+
+    .paper .signature {
+      font-family: 'Ma Shan Zheng', cursive;
+      font-size: 22px;
+      color: var(--accent);
+      text-align: right;
+      margin-top: 30px;
+      padding-right: 20px;
+    }
+
+    /* ====== PHOTO GALLERY ====== */
+    .gallery-section {
+      margin: 30px 0;
+      animation: fadeUp 1s ease 0.3s both;
+    }
+    .gallery-title {
+      font-family: 'Ma Shan Zheng', cursive;
+      font-size: 22px;
+      text-align: center;
+      color: var(--ink-light);
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .gallery-title::before,
+    .gallery-title::after {
+      content: '— ';
+      color: var(--line);
+    }
+    .gallery-title::after {
+      content: ' —';
+    }
+
+    .photo-grid {
+      display: grid;
+      gap: 16px;
+    }
+    .photo-grid.layout-2 { grid-template-columns: 1fr 1fr; }
+    .photo-grid.layout-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+    .photo-card {
+      background: #fff;
+      padding: 10px 10px 30px;
+      border-radius: 2px;
+      box-shadow:
+        0 2px 8px rgba(0,0,0,0.08),
+        0 1px 2px rgba(0,0,0,0.06);
+      transform: rotate(var(--rotate, 0deg));
+      transition: transform 0.4s ease, box-shadow 0.4s ease;
+      cursor: pointer;
+      position: relative;
+    }
+    .photo-card:hover {
+      transform: rotate(0deg) scale(1.03);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+      z-index: 10;
+    }
+
+    .photo-card img {
+      width: 100%;
+      aspect-ratio: 4/3;
+      object-fit: cover;
+      display: block;
+      border-radius: 1px;
+    }
+
+    .photo-card .caption {
+      font-family: 'Ma Shan Zheng', cursive;
+      font-size: 14px;
+      color: var(--ink-light);
+      text-align: center;
+      margin-top: 10px;
+      min-height: 20px;
+    }
+
+    /* scattered layout for polaroids */
+    .photo-card:nth-child(1) { --rotate: -2.5deg; }
+    .photo-card:nth-child(2) { --rotate: 1.8deg; }
+    .photo-card:nth-child(3) { --rotate: -1.2deg; }
+    .photo-card:nth-child(4) { --rotate: 2.5deg; }
+    .photo-card:nth-child(5) { --rotate: -3deg; }
+    .photo-card:nth-child(6) { --rotate: 1deg; }
+    .photo-card:nth-child(7) { --rotate: -1.8deg; }
+    .photo-card:nth-child(8) { --rotate: 2deg; }
+
+    /* tape decoration */
+    .photo-card::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      left: 50%;
+      transform: translateX(-50%) rotate(var(--tape-rotate, 2deg));
+      width: 50px;
+      height: 16px;
+      background: rgba(255, 235, 180, 0.7);
+      border-radius: 1px;
+      z-index: 2;
+    }
+    .photo-card:nth-child(odd)::before { --tape-rotate: -3deg; }
+    .photo-card:nth-child(even)::before { --tape-rotate: 4deg; }
+
+    /* ====== LIGHTBOX ====== */
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      background: rgba(30, 25, 20, 0.92);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.4s, visibility 0.4s;
+      cursor: pointer;
+    }
+    .lightbox.active { opacity: 1; visibility: visible; }
+    .lightbox img {
+      max-width: 90vw;
+      max-height: 85vh;
+      object-fit: contain;
+      border-radius: 4px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+
+    /* ====== FOOTER ====== */
+    .letter-footer {
+      text-align: center;
+      padding: 30px 0;
+      animation: fadeUp 1s ease 0.5s both;
+    }
+    .heart {
+      display: inline-block;
+      font-size: 28px;
+      color: var(--accent);
+      animation: heartbeat 1.5s ease infinite;
+    }
+
+    /* ====== EDIT HINT ====== */
+    .edit-hints {
+      background: rgba(194, 112, 90, 0.08);
+      border: 1px dashed var(--accent);
+      border-radius: 8px;
+      padding: 24px 28px;
+      margin: 30px 0;
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--ink-light);
+    }
+    .edit-hints h3 {
+      font-family: 'Noto Serif SC', serif;
+      color: var(--accent);
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+    .edit-hints code {
+      background: rgba(194, 112, 90, 0.1);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 13px;
+      color: var(--ink);
+    }
+
+    /* ====== DIARY TIMELINE ====== */
+    .diary-section {
+      margin: 30px 0;
+      animation: fadeUp 1s ease 0.3s both;
+    }
+    .diary-title {
+      font-family: 'Ma Shan Zheng', cursive;
+      font-size: 22px;
+      text-align: center;
+      color: var(--ink-light);
+      margin-bottom: 30px;
+    }
+    .diary-title::before { content: '— '; color: var(--line); }
+    .diary-title::after  { content: ' —'; color: var(--line); }
+
+    .diary-timeline {
+      position: relative;
+      padding-left: 28px;
+    }
+    .diary-timeline::before {
+      content: '';
+      position: absolute;
+      left: 8px;
+      top: 0; bottom: 0;
+      width: 1.5px;
+      background: var(--line);
+    }
+
+    .diary-entry {
+      position: relative;
+      margin-bottom: 40px;
+    }
+    .diary-entry::before {
+      content: '';
+      position: absolute;
+      left: -24px;
+      top: 6px;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid var(--paper);
+      box-shadow: 0 0 0 1.5px var(--accent);
+    }
+
+    .diary-date {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 13px;
+      color: var(--ink-light);
+      letter-spacing: 2px;
+      margin-bottom: 10px;
+    }
+
+    .diary-photo {
+      background: #fff;
+      padding: 10px 10px 30px;
+      border-radius: 2px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+      transform: rotate(var(--rotate, 0deg));
+      transition: transform 0.4s, box-shadow 0.4s;
+      cursor: pointer;
+      position: relative;
+      max-width: 420px;
+    }
+    .diary-photo:hover {
+      transform: rotate(0deg) scale(1.02);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    }
+    .diary-photo img {
+      width: 100%;
+      aspect-ratio: 3/4;
+      object-fit: cover;
+      display: block;
+      border-radius: 1px;
+    }
+    .diary-photo .caption {
+      font-family: 'Ma Shan Zheng', cursive;
+      font-size: 13px;
+      color: var(--ink-light);
+      text-align: center;
+      margin-top: 10px;
+    }
+    .diary-photo::before {
+      content: '';
+      position: absolute;
+      top: -6px; left: 50%;
+      transform: translateX(-50%) rotate(var(--tape-rotate, 2deg));
+      width: 50px; height: 16px;
+      background: rgba(255,235,180,0.7);
+      border-radius: 1px;
+      z-index: 2;
+    }
+    .diary-entry:nth-child(odd)  .diary-photo { --rotate: -1.5deg; --tape-rotate: -3deg; }
+    .diary-entry:nth-child(even) .diary-photo { --rotate:  1.5deg; --tape-rotate:  3deg; }
+
+    /* ====== ANIMATIONS ====== */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      15% { transform: scale(1.15); }
+      30% { transform: scale(1); }
+      45% { transform: scale(1.1); }
+    }
+
+    /* ====== RESPONSIVE ====== */
+    @media (max-width: 600px) {
+      .paper { padding: 35px 25px; }
+      .paper::before { left: 22px; }
+      .paper .greeting { padding-left: 10px; font-size: 20px; }
+      .paper .body-text { padding-left: 10px; font-size: 18px; line-height: 32px; }
+      .diary-photo { max-width: 100%; }
+      .lock-card { padding: 40px 25px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========== PASSWORD SCREEN ========== -->
+  <div class="password-screen" id="passwordScreen">
+    <div class="lock-card">
+      <div class="lock-icon">
+        <svg viewBox="0 0 64 64">
+          <rect x="12" y="28" width="40" height="28" rx="4" stroke-width="2"/>
+          <path d="M20 28V20a12 12 0 0 1 24 0v8" stroke-width="2"/>
+          <circle cx="32" cy="42" r="3" fill="currentColor" stroke="none"/>
+          <line x1="32" y1="45" x2="32" y2="50" stroke-width="2"/>
+        </svg>
+      </div>
+      <h2>这是一封写给你的信</h2>
+      <p class="subtitle">请输入密码查看</p>
+      <div class="password-input-wrap">
+        <input
+          type="password"
+          id="passwordInput"
+          placeholder="你最爱的人的生日"
+          autocomplete="off"
+          onkeydown="if(event.key==='Enter')checkPassword()"
+        >
+      </div>
+      <button class="unlock-btn" onclick="checkPassword()">打 开</button>
+      <p class="error-msg" id="errorMsg"></p>
+    </div>
+  </div>
+
+  <!-- ========== LETTER CONTENT ========== -->
+  <div class="letter-container" id="letterContent">
+
+    <div class="envelope-header">
+      <h1>写给你的信</h1>
+      <p class="date">2026 年 春</p>
+    </div>
+
+    <!-- ===== 信纸正文 ===== -->
+    <div class="paper">
+      <p class="greeting">亲爱的：</p>
+      <p class="body-text">在这里写下你想对她说的话。
+
+可以分段，每一段之间空一行就好。
+
+你可以写很长很长，信纸会自动延伸。每一行的下面都有横线，就像真正的信纸一样。
+
+想说什么就说什么吧，这封信只有她能看到。</p>
+      <p class="signature">—— 写你的名字</p>
+    </div>
+
+    <!-- ===== 每日信件 ===== -->
+    <div class="diary-section">
+      <p class="diary-title">一些想说的话</p>
+      <div class="diary-timeline">
+
+        <!-- ── 第 1 天 ── 复制这段来添加新的一天 -->
+        <div class="diary-entry">
+          <p class="diary-date">第 1 天 · 2026 年 4 月 1 日</p>
+          <div class="diary-photo">
+            <img src="./WechatIMG111.jpg" alt="第1天的信">
+            <p class="caption">2026.4.13</p>
+          </div>
+        </div>
+
+        <!-- ── 第 2 天 ── -->
+        <div class="diary-entry">
+          <p class="diary-date">第 2 天 · 2026 年 4 月 2 日</p>
+          <div class="diary-photo">
+            <img src="https://placehold.co/300x400/f5e6c8/c2705a?text=第2天的信" alt="第2天的信">
+            <p class="caption">今天想说的话</p>
+          </div>
+        </div>
+
+        <!-- 继续添加 diary-entry … -->
+
+      </div>
+    </div>
+
+    <!-- ===== 结尾 ===== -->
+    <div class="letter-footer">
+      <span class="heart">♥</span>
+    </div>
+
+    <!-- ===== 编辑指南（部署前删除这段） ===== -->
+    <div class="edit-hints">
+      <h3>📝 使用说明（部署前请删除这整段）</h3>
+      <p><strong>1. 设置密码：</strong>在文件底部的 <code>&lt;script&gt;</code> 中找到 <code>const PASSWORD = "520"</code>，改成你想要的密码。</p>
+      <p><strong>2. 写信：</strong>修改上面 <code>class="body-text"</code> 里的文字，直接写你想说的话。</p>
+      <p><strong>3. 换照片：</strong>把 <code>&lt;img src="..."&gt;</code> 里的地址换成你的照片。可以用图床（如 imgbb.com 免费上传），或者把照片文件和 HTML 放在同一个文件夹里，直接写文件名如 <code>src="photo1.jpg"</code>。</p>
+      <p><strong>4. 加照片：</strong>复制一个 <code>photo-card</code> 的 div 就能增加新照片。</p>
+      <p><strong>5. 照片说明：</strong>修改每张照片下方 <code>class="caption"</code> 里的文字。</p>
+      <p><strong>6. 署名和日期：</strong>修改 <code>class="signature"</code> 和 <code>class="date"</code> 里的内容。</p>
+      <p><strong>7. 部署推荐：</strong></p>
+      <p>　　• <strong>最简单：</strong>用 <a href="https://pages.github.com" style="color:var(--accent)">GitHub Pages</a>（免费），把文件上传到仓库即可得到链接。</p>
+      <p>　　• <strong>更简单：</strong>用 <a href="https://app.netlify.com/drop" style="color:var(--accent)">Netlify Drop</a>（免费），直接拖拽文件夹上传，秒得链接。</p>
+      <p>　　• <strong>最快：</strong>用 <a href="https://vercel.com" style="color:var(--accent)">Vercel</a>（免费），连 GitHub 仓库自动部署。</p>
+      <p><strong>⚠️ 安全提示：</strong>这个密码保护是前端级别的，适合防止普通人直接看到内容。懂技术的人可以通过查看源代码绕过。对于写情书来说完全够用了！</p>
+    </div>
+
+  </div>
+
+  <!-- ========== LIGHTBOX ========== -->
+  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <img id="lightboxImg" src="" alt="">
+  </div>
+
+  <script>
+    // ============ 在这里设置你的密码 ============
+    const PASSWORD = "0327";
+    // ==========================================
+
+    function checkPassword() {
+      const input = document.getElementById('passwordInput');
+      const error = document.getElementById('errorMsg');
+      if (input.value === PASSWORD) {
+        document.getElementById('passwordScreen').classList.add('hidden');
+        document.getElementById('letterContent').classList.add('visible');
+        error.textContent = '';
+      } else {
+        error.textContent = '密码不对哦，再想想～';
+        input.value = '';
+        input.focus();
+        // shake animation
+        const card = document.querySelector('.lock-card');
+        card.style.animation = 'none';
+        card.offsetHeight;
+        card.style.animation = 'shake 0.4s ease';
+      }
+    }
+
+    // Lightbox for photos
+    document.querySelectorAll('.diary-photo img').forEach(img => {
+      img.addEventListener('click', () => {
+        document.getElementById('lightboxImg').src = img.src;
+        document.getElementById('lightbox').classList.add('active');
+      });
+    });
+
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('active');
+    }
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeLightbox();
+    });
+
+    // Add shake keyframes dynamically
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        20% { transform: translateX(-10px); }
+        40% { transform: translateX(10px); }
+        60% { transform: translateX(-6px); }
+        80% { transform: translateX(6px); }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Auto focus password input
+    window.addEventListener('load', () => {
+      document.getElementById('passwordInput').focus();
+    });
+  </script>
+
+</body>
+</html>
